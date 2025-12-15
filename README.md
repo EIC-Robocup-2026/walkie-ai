@@ -1,4 +1,4 @@
-# Walkie-2026-AI
+# Walkie-AI
 
 โปรเจกต์นี้คือระบบ AI Agent ที่มีความสามารถในการรับรู้หลายรูปแบบ (Multimodal) ทั้งเสียง (Voice), ภาพ (Vision) และการโต้ตอบ (Interaction) โดยมีการออกแบบโครงสร้างแบบ **Modular Architecture** เพื่อให้ง่ายต่อการขยายความสามารถ (Scalability) และการดูแลรักษา (Maintainability)
 
@@ -41,7 +41,7 @@ project_root/
 
 ส่วนติดต่อกับโลกภายนอก (Human-Computer Interaction)
 
-  * **ASR (Automatic Speech Recognition):** แปลงเสียงพูดเป็นข้อความ (e.g., Whisper)
+  * **ASR (Automatic Speech Recognition):** แปลงเสียงพูดเป็นข้อความ
   * **TTS (Text-to-Speech):** แปลงข้อความตอบกลับเป็นเสียงพูด
   * **Files:** `asr/`, `tts/`
 
@@ -57,7 +57,7 @@ project_root/
 
 ส่วนประมวลผลข้อมูลภาพ แยกเป็นอิสระเพื่อประสิทธิภาพ
 
-  * **Image Model:** ใช้ Model (เช่น CLIP, ViT) เพื่อแปลงภาพเป็น Vector (Embeddings) หรือวิเคราะห์สิ่งที่เห็น
+  * **Image Model:** ใช้ Model เพื่อแปลงภาพเป็น Vector (Embeddings) หรือวิเคราะห์สิ่งที่เห็น
   * **Flow:** Image Capture -\> Image Model -\> Database
 
 ### 5\. `src/database/` (Memory & Storage)
@@ -74,10 +74,12 @@ project_root/
 
 ## 🚀 Getting Started
 
+โปรเจกต์นี้ใช้ **[uv](https://github.com/astral-sh/uv)** ในการจัดการ Python environment และ dependencies เพื่อความรวดเร็วและประสิทธิภาพสูงสุด
+
 ### Prerequisites
 
   * Python 3.10+
-  * [Virtual Environment Recommended]
+  * **uv** (ติดตั้งผ่าน `pip install uv` หรือ `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 
 ### Installation
 
@@ -88,10 +90,20 @@ project_root/
     cd <your-project-name>
     ```
 
-2.  Install dependencies:
+2.  Setup Virtual Environment และ Install dependencies ด้วย `uv`:
 
     ```bash
-    pip install -r requirements.txt
+    # สร้าง Virtual Environment
+    uv venv
+
+    # Activate environment
+    # สำหรับ macOS/Linux:
+    source .venv/bin/activate
+    # สำหรับ Windows:
+    # .venv\Scripts\activate
+
+    # ติดตั้ง dependencies อย่างรวดเร็ว
+    uv pip install -r requirements.txt
     ```
 
 3.  Environment Setup:
@@ -113,10 +125,10 @@ python main.py
 
 -----
 
-## 🛠️ Tech Stack (Example)
+## 🛠️ Tech Stack
 
   * **Language:** Python
   * **Agent Framework:** LangChain / LangGraph (Optional)
   * **Vision:** ???
-  * **Audio:** SimulStreaming / parakeet
+  * **Audio:** SimulStreaming / Parakeet
   * **Database:** FAISS (Vector)
