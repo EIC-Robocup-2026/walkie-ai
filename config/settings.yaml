@@ -1,4 +1,18 @@
 # -----------------------------------------------------------------------------
+# Speech-to-Text (STT) Configuration
+# -----------------------------------------------------------------------------
+stt:
+  # Active provider: google, whisper (add more as needed)
+  provider: "google"
+  
+  # Google Cloud Speech-to-Text Configuration
+  google:
+    location: "us-central1"
+    language_codes: ["en-US"]
+    model: "chirp_2"
+    recognizer: "_"
+
+# -----------------------------------------------------------------------------
 # Text-to-Speech (TTS) Configuration
 # -----------------------------------------------------------------------------
 tts:

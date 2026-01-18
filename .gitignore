@@ -208,3 +208,4 @@ __marimo__/
 
 # Test output audio files
 *.mp3
+service-accounts.json
