@@ -34,8 +34,10 @@ project_root/
 
   * **Core Role:** รับข้อความจาก ASR, ตัดสินใจเรียกใช้ Tools, และส่งคำตอบกลับไปที่ TTS
   * **Files:**
-      * `core.py`: Main loop ของ Agent
-      * `state.py`: จัดการ State ปัจจุบันของการสนทนาหรือการทำงาน
+      * `core.py`: Main agent with LangChain ReAct framework
+      * `memory.py`: Conversation history and context management
+      * `state.py`: Agent status tracking (idle, processing, speaking)
+      * `mcp_server.py`: MCP server exposing agent as tools
 
 ### 2\. `src/interface/` (Input/Output)
 
@@ -74,12 +76,13 @@ project_root/
 
 ## 🚀 Getting Started
 
-โปรเจกต์นี้ใช้ **[uv](https://github.com/astral-sh/uv)** ในการจัดการ Python environment และ dependencies เพื่อความรวดเร็วและประสิทธิภาพสูงสุด
+โปรเจกต์นี้ใช้ **Conda** environment สำหรับการจัดการ dependencies
 
 ### Prerequisites
 
-  * Python 3.10+
-  * **uv** (ติดตั้งผ่าน `pip install uv` หรือ `curl -LsSf https://astral.sh/uv/install.sh | sh`)
+  * Python 3.11+
+  * Conda (Miniconda or Anaconda)
+  * API Keys: OpenAI, ElevenLabs, Google Cloud
 
 ### Installation
 
@@ -87,48 +90,62 @@ project_root/
 
     ```bash
     git clone <your-repo-url>
-    cd <your-project-name>
+    cd walkie-ai
     ```
 
-2.  Setup Virtual Environment และ Install dependencies ด้วย `uv`:
+2.  Create Conda environment:
 
     ```bash
-    # สร้าง Virtual Environment
-    uv venv
-
-    # Activate environment
-    # สำหรับ macOS/Linux:
-    source .venv/bin/activate
-    # สำหรับ Windows:
-    # .venv\Scripts\activate
-
-    # ติดตั้ง dependencies อย่างรวดเร็ว
-    uv pip install -r requirements.txt
+    conda create -n eic python=3.11 -y
+    conda activate eic
     ```
 
-3.  Environment Setup:
-    สร้างไฟล์ `.env` ที่ root folder และกำหนดค่า key ที่จำเป็น:
+3.  Install dependencies:
 
-    ```env
-    OPENAI_API_KEY=sk-...
-    DATABASE_URL=sqlite:///./data/db/main.db
-    # keys อื่นๆ ตาม config/settings.yaml
+    ```bash
+    pip install -e .
+    ```
+
+4.  Environment Setup:
+    Copy `.env.example` to `.env` and add your API keys:
+
+    ```bash
+    cp .env.example .env
+    # Edit .env with your keys
     ```
 
 ### Usage
 
-รันระบบด้วยคำสั่ง:
-
+**Interactive Mode:**
 ```bash
-python main.py
+python main.py --mode interactive
+```
+
+**Text Command:**
+```bash
+python main.py --mode text --command "Your command here"
+```
+
+**Voice Mode:**
+```bash
+python main.py --mode voice --audio input.wav --output response.mp3
+```
+
+**MCP Server (Recommended for integration):**
+```bash
+python -m src.agent.mcp_server
+# Or test it:
+python test_mcp_server.py
 ```
 
 -----
 
 ## 🛠️ Tech Stack
 
-  * **Language:** Python
-  * **Agent Framework:** LangChain / LangGraph (Optional)
-  * **Vision:** ???
-  * **Audio:** SimulStreaming / Parakeet
-  * **Database:** FAISS (Vector)
+  * **Language:** Python 3.11
+  * **Agent Framework:** LangChain (ReAct agent)
+  * **LLM:** OpenAI GPT-4
+  * **TTS:** ElevenLabs
+  * **STT:** Google Cloud Speech-to-Text
+  * **Audio Processing:** Silero VAD, sounddevice
+  * **Integration:** MCP (Model Context Protocol)

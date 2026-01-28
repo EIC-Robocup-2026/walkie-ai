@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "walkie-agent": {
+      "command": "python",
+      "args": ["-m", "src.agent.mcp_server"],
+      "cwd": "${workspaceFolder}/walkie-ai",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/walkie-ai"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "get_agent_state",
+        "get_conversation_history",
+        "get_context"
+      ]
+    }
+  }
+}
