@@ -1,15 +1,17 @@
 """Core agent implementation with LangChain integration.
 
 This module provides the main agent that orchestrates tools like TTS, STT,
-navigation, and RAG to handle user commands.
+navigation, and RAG to handle user commands using tool calling.
 """
 
 from typing import Any, AsyncIterator
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import Tool
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 from ..interface.asr import STT
 from ..interface.tts import TTS
@@ -47,15 +49,25 @@ class WalkieAgent:
         # Initialize tools
         self.tools = tools or self._create_default_tools()
         
+        # Bind tools to LLM for tool calling (OpenAI function calling)
+        self.llm_with_tools = self.llm.bind_tools(self.tools)
+        
         # Create prompt template
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", """You are Walkie, an AI assistant that helps users with voice interactions.
-You have access to the following tools:
+You have access to various tools to help complete tasks.
 
-{tools}
+Available tools:
+{tool_descriptions}
 
-When you need to use a tool, respond with the tool name and input.
-Otherwise, respond directly to the user."""),
+When you need to use a tool:
+1. Analyze what the user is asking for
+2. Determine which tool(s) can help
+3. Call the appropriate tool(s) with correct parameters
+4. Use the tool results to formulate your response
+
+Always be helpful and use tools when they can improve your response."""),
+            MessagesPlaceholder(variable_name="chat_history", optional=True),
             ("human", "{input}"),
         ])
 
@@ -101,7 +113,7 @@ Otherwise, respond directly to the user."""),
         return text
 
     async def execute_task(self, command: str) -> str:
-        """Execute a task using the agent.
+        """Execute a task using the agent with tool calling.
         
         Args:
             command: User command or query.
@@ -115,18 +127,53 @@ Otherwise, respond directly to the user."""),
         # Get conversation history for context
         history = self.memory.get_history(n=5)
         
-        # Build context from history
-        messages = []
+        # Build chat history
+        chat_history = []
         for interaction in history:
-            messages.append(HumanMessage(content=interaction["user_input"]))
-            messages.append(AIMessage(content=interaction["agent_response"]))
+            chat_history.append(HumanMessage(content=interaction["user_input"]))
+            chat_history.append(AIMessage(content=interaction["agent_response"]))
         
-        # Add current message
-        messages.append(HumanMessage(content=command))
+        # Prepare tool descriptions
+        tool_descriptions = "\n".join([
+            f"- {tool.name}: {tool.description}"
+            for tool in self.tools
+        ])
         
-        # Get response from LLM
-        response = await self.llm.ainvoke(messages)
-        result = response.content
+        # Invoke LLM with tools
+        response = await self.llm_with_tools.ainvoke(
+            self.prompt.format_messages(
+                input=command,
+                chat_history=chat_history,
+                tool_descriptions=tool_descriptions,
+            )
+        )
+        
+        # Check if tool calls were made
+        if hasattr(response, 'tool_calls') and response.tool_calls:
+            # Execute tool calls
+            tool_results = []
+            for tool_call in response.tool_calls:
+                tool_name = tool_call['name']
+                tool_args = tool_call['args']
+                
+                # Find and execute the tool
+                for tool in self.tools:
+                    if tool.name == tool_name:
+                        if self.verbose:
+                            print(f"Calling tool: {tool_name} with args: {tool_args}")
+                        result = tool.func(**tool_args) if isinstance(tool_args, dict) else tool.func(tool_args)
+                        tool_results.append(f"{tool_name}: {result}")
+                        break
+            
+            # Get final response with tool results
+            final_prompt = f"{command}\n\nTool results:\n" + "\n".join(tool_results)
+            final_response = await self.llm.ainvoke([
+                HumanMessage(content=final_prompt)
+            ])
+            result = final_response.content
+        else:
+            # No tool calls, use direct response
+            result = response.content
         
         # Store in memory
         self.memory.add_interaction(command, result)
@@ -197,6 +244,8 @@ Otherwise, respond directly to the user."""),
             tool: LangChain Tool to add.
         """
         self.tools.append(tool)
+        # Rebind tools to LLM
+        self.llm_with_tools = self.llm.bind_tools(self.tools)
 
     def get_conversation_history(self, n: int | None = None) -> list[dict[str, str]]:
         """Get conversation history.
